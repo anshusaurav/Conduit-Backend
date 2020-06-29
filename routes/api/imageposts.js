@@ -5,7 +5,7 @@ var ImagePost = mongoose.model('ImagePost')
 var Comment = mongoose.model('Comment')
 var User = mongoose.model('User')
 var auth = require('../auth')
-var path = require('path')
+// var path = require('path')
 const uuid = require('uuid')
 const DIR = './public/'
 
@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
       .toLowerCase()
       .split(' ')
       .join('-')
-    cb(null, fileName)
+   cb(null, uuid.v4().toString() + "_" + fileName)
   }
 })
 
@@ -37,7 +37,7 @@ var upload = multer({
     }
   }
 })
-// Preload article objects on routes with ':article'
+// Preload imagepost objects on routes with ':p'
 router.param('p', function (req, res, next, slug) {
   ImagePost.findOne({ slug: slug })
     .populate('author')
@@ -175,13 +175,7 @@ router.post('/', auth.required, upload.single('filename'), function (
   console.log('HERE POSt')
   console.log(req.body)
   console.log(req.file)
-  const url = req.protocol + '://' + req.get('host')
-  // console.log(req.body)
-  // const formData = req.body;
-  // console.log('form data', formData);
-  // req.body.filename = formData['file'].filename;
-  // console.log('Request ---', req.body)
-  // console.log('Request file ---', req.file)
+  const url = req.protocol + '://' + req.get('host');
   User.findById(req.payload.id)
     .then(function (user) {
       if (!user) {
@@ -204,7 +198,7 @@ router.post('/', auth.required, upload.single('filename'), function (
     .catch(next)
 })
 
-// return a article
+// return a imagepost
 router.get('/:imagepost', auth.optional, function (req, res, next) {
   Promise.all([
     req.payload ? User.findById(req.payload.id) : null,
@@ -218,7 +212,7 @@ router.get('/:imagepost', auth.optional, function (req, res, next) {
     .catch(next)
 })
 
-// update article
+// update imagepost
 router.put('/:imagepost', auth.required, function (req, res, next) {
   User.findById(req.payload.id).then(function (user) {
     if (req.imagepost.author._id.toString() === req.payload.id.toString()) {
@@ -246,7 +240,7 @@ router.put('/:imagepost', auth.required, function (req, res, next) {
   })
 })
 
-// delete article
+// delete imagepost
 router.delete('/:imagepost', auth.required, function (req, res, next) {
   User.findById(req.payload.id)
     .then(function (user) {
@@ -265,7 +259,7 @@ router.delete('/:imagepost', auth.required, function (req, res, next) {
     .catch(next)
 })
 
-// Favorite an article
+// Favorite an imagepost
 router.post('/:imagepost/favorite', auth.required, function (req, res, next) {
   var imagepostId = req.imagepost._id
 
@@ -284,7 +278,7 @@ router.post('/:imagepost/favorite', auth.required, function (req, res, next) {
     .catch(next)
 })
 
-// Unfavorite an article
+// Unfavorite an imagepost
 router.delete('/:imagepost/favorite', auth.required, function (req, res, next) {
   var imagepostId = req.article._id
 
@@ -303,7 +297,7 @@ router.delete('/:imagepost/favorite', auth.required, function (req, res, next) {
     .catch(next)
 })
 
-// return an article's comments
+// return an imagepost's comments
 router.get('/:imagepost/comments', auth.optional, function (req, res, next) {
   Promise.resolve(req.payload ? User.findById(req.payload.id) : null)
     .then(function (user) {
