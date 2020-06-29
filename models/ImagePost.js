@@ -8,7 +8,7 @@ var ImagePostSchema = new mongoose.Schema(
     slug: { type: String, lowercase: true, unique: true },
     filename: String,
     description: String,
-    // body: String,
+    location: String,
     favoritesCount: { type: Number, default: 0 },
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
     tagList: [{ type: String }],
@@ -29,7 +29,7 @@ ImagePostSchema.pre('validate', function (next) {
 
 ImagePostSchema.methods.slugify = function () {
   this.slug =
-    slug(this.title) +
+    slug(this.filename) +
     '-' +
     ((Math.random() * Math.pow(36, 6)) | 0).toString(36)
 }
@@ -51,7 +51,7 @@ ImagePostSchema.methods.toJSONFor = function (user) {
     slug: this.slug,
     filename: this.filename,
     description: this.description,
-    body: this.body,
+    location: this.location,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
     tagList: this.tagList,

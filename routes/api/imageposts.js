@@ -123,9 +123,10 @@ router.get('/feed', auth.required, function(req, res, next) {
 });
 
 router.post('/', auth.required, function(req, res, next) {
+  console.log('HERE POSt');
   User.findById(req.payload.id).then(function(user){
     if (!user) { return res.sendStatus(401); }
-
+    console.log('user veriified');
     var imagepost = new ImagePost(req.body.imagepost);
 
     imagepost.author = user;
