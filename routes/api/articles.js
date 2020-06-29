@@ -1,18 +1,18 @@
 var router = require('express').Router();
 var mongoose = require('mongoose');
-var Article = mongoose.model('Article');
+var ImagePost = mongoose.model('ImagePost');
 var Comment = mongoose.model('Comment');
 var User = mongoose.model('User');
 var auth = require('../auth');
 
 // Preload article objects on routes with ':article'
-router.param('article', function(req, res, next, slug) {
-  Article.findOne({ slug: slug})
+router.param('p', function(req, res, next, slug) {
+  ImagePost.findOne({ slug: slug})
     .populate('author')
-    .then(function (article) {
-      if (!article) { return res.sendStatus(404); }
+    .then(function (imagepost) {
+      if (!imagepost) { return res.sendStatus(404); }
 
-      req.article = article;
+      req.imagepost = imagepost;
 
       return next();
     }).catch(next);
@@ -63,24 +63,24 @@ router.get('/', auth.optional, function(req, res, next) {
     }
 
     return Promise.all([
-      Article.find(query)
+      ImagePost.find(query)
         .limit(Number(limit))
         .skip(Number(offset))
         .sort({createdAt: 'desc'})
         .populate('author')
         .exec(),
-      Article.count(query).exec(),
+      ImagePost.count(query).exec(),
       req.payload ? User.findById(req.payload.id) : null,
     ]).then(function(results){
-      var articles = results[0];
-      var articlesCount = results[1];
+      var imageposts = results[0];
+      var imagepostCount = results[1];
       var user = results[2];
 
       return res.json({
-        articles: articles.map(function(article){
-          return article.toJSONFor(user);
+        imageposts: imageposts.map(function(imagepost){
+          return imagepost.toJSONFor(user);
         }),
-        articlesCount: articlesCount
+        imagepostCount: imagepostCount
       });
     });
   }).catch(next);
@@ -102,21 +102,21 @@ router.get('/feed', auth.required, function(req, res, next) {
     if (!user) { return res.sendStatus(401); }
 
     Promise.all([
-      Article.find({ author: {$in: user.following}})
+      ImagePost.find({ author: {$in: user.following}})
         .limit(Number(limit))
         .skip(Number(offset))
         .populate('author')
         .exec(),
       Article.count({ author: {$in: user.following}})
     ]).then(function(results){
-      var articles = results[0];
-      var articlesCount = results[1];
+      var imageposts = results[0];
+      var imagepostCount = results[1];
 
       return res.json({
-        articles: articles.map(function(article){
-          return article.toJSONFor(user);
+        imageposts: imageposts.map(function(imagepost){
+          return imagepost.toJSONFor(user);
         }),
-        articlesCount: articlesCount
+        imagepostCount: imagepostCount
       });
     }).catch(next);
   });
@@ -126,51 +126,48 @@ router.post('/', auth.required, function(req, res, next) {
   User.findById(req.payload.id).then(function(user){
     if (!user) { return res.sendStatus(401); }
 
-    var article = new Article(req.body.article);
+    var imagepost = new ImagePost(req.body.imagepost);
 
-    article.author = user;
+    imagepost.author = user;
 
-    return article.save().then(function(){
-      console.log(article.author);
-      return res.json({article: article.toJSONFor(user)});
+    return imagepost.save().then(function(){
+      console.log(imagepost.author);
+      return res.json({imagepost: imagepost.toJSONFor(user)});
     });
   }).catch(next);
 });
 
 // return a article
-router.get('/:article', auth.optional, function(req, res, next) {
+router.get('/:imagepost', auth.optional, function(req, res, next) {
   Promise.all([
     req.payload ? User.findById(req.payload.id) : null,
-    req.article.populate('author').execPopulate()
+    req.imagepost.populate('author').execPopulate()
   ]).then(function(results){
     var user = results[0];
 
-    return res.json({article: req.article.toJSONFor(user)});
+    return res.json({imagepost: req.imagepost.toJSONFor(user)});
   }).catch(next);
 });
 
 // update article
-router.put('/:article', auth.required, function(req, res, next) {
+router.put('/:imagepost', auth.required, function(req, res, next) {
   User.findById(req.payload.id).then(function(user){
-    if(req.article.author._id.toString() === req.payload.id.toString()){
-      if(typeof req.body.article.title !== 'undefined'){
-        req.article.title = req.body.article.title;
+    if(req.imagepost.author._id.toString() === req.payload.id.toString()){
+      if(typeof req.body.imagepost.filename !== 'undefined'){
+        req.imagepost.filename = req.body.imagepost.filename;
       }
 
-      if(typeof req.body.article.description !== 'undefined'){
-        req.article.description = req.body.article.description;
+      if(typeof req.body.imagepost.description !== 'undefined'){
+        req.imagepost.description = req.body.imagepost.description;
       }
 
-      if(typeof req.body.article.body !== 'undefined'){
-        req.article.body = req.body.article.body;
-      }
 
-      if(typeof req.body.article.tagList !== 'undefined'){
-        req.article.tagList = req.body.article.tagList
+      if(typeof req.body.imagepost.tagList !== 'undefined'){
+        req.imagepost.tagList = req.body.imagepost.tagList
       }
 
       req.article.save().then(function(article){
-        return res.json({article: article.toJSONFor(user)});
+        return res.json({article: imagepost.toJSONFor(user)});
       }).catch(next);
     } else {
       return res.sendStatus(403);
@@ -179,12 +176,12 @@ router.put('/:article', auth.required, function(req, res, next) {
 });
 
 // delete article
-router.delete('/:article', auth.required, function(req, res, next) {
+router.delete('/:imagepost', auth.required, function(req, res, next) {
   User.findById(req.payload.id).then(function(user){
     if (!user) { return res.sendStatus(401); }
 
-    if(req.article.author._id.toString() === req.payload.id.toString()){
-      return req.article.remove().then(function(){
+    if(req.imagepost.author._id.toString() === req.imagepost.id.toString()){
+      return req.imagepost.remove().then(function(){
         return res.sendStatus(204);
       });
     } else {
@@ -194,39 +191,39 @@ router.delete('/:article', auth.required, function(req, res, next) {
 });
 
 // Favorite an article
-router.post('/:article/favorite', auth.required, function(req, res, next) {
-  var articleId = req.article._id;
+router.post('/:imagepost/favorite', auth.required, function(req, res, next) {
+  var imagepostId = req.imagepost._id;
 
   User.findById(req.payload.id).then(function(user){
     if (!user) { return res.sendStatus(401); }
 
-    return user.favorite(articleId).then(function(){
-      return req.article.updateFavoriteCount().then(function(article){
-        return res.json({article: article.toJSONFor(user)});
+    return user.favorite(imagepostId).then(function(){
+      return req.imagepost.updateFavoriteCount().then(function(imagepost){
+        return res.json({imagepost: imagepost.toJSONFor(user)});
       });
     });
   }).catch(next);
 });
 
 // Unfavorite an article
-router.delete('/:article/favorite', auth.required, function(req, res, next) {
-  var articleId = req.article._id;
+router.delete('/:imagepost/favorite', auth.required, function(req, res, next) {
+  var imagepostId = req.article._id;
 
   User.findById(req.payload.id).then(function (user){
     if (!user) { return res.sendStatus(401); }
 
-    return user.unfavorite(articleId).then(function(){
-      return req.article.updateFavoriteCount().then(function(article){
-        return res.json({article: article.toJSONFor(user)});
+    return user.unfavorite(imagepostId).then(function(){
+      return req.imagepost.updateFavoriteCount().then(function(imagepost){
+        return res.json({imagepost: imagepost.toJSONFor(user)});
       });
     });
   }).catch(next);
 });
 
 // return an article's comments
-router.get('/:article/comments', auth.optional, function(req, res, next){
+router.get('/:imagepost/comments', auth.optional, function(req, res, next){
   Promise.resolve(req.payload ? User.findById(req.payload.id) : null).then(function(user){
-    return req.article.populate({
+    return req.imagepost.populate({
       path: 'comments',
       populate: {
         path: 'author'
@@ -237,7 +234,7 @@ router.get('/:article/comments', auth.optional, function(req, res, next){
         }
       }
     }).execPopulate().then(function(article) {
-      return res.json({comments: req.article.comments.map(function(comment){
+      return res.json({comments: req.imagepost.comments.map(function(comment){
         return comment.toJSONFor(user);
       })});
     });
@@ -245,28 +242,28 @@ router.get('/:article/comments', auth.optional, function(req, res, next){
 });
 
 // create a new comment
-router.post('/:article/comments', auth.required, function(req, res, next) {
+router.post('/:imagepost/comments', auth.required, function(req, res, next) {
   User.findById(req.payload.id).then(function(user){
     if(!user){ return res.sendStatus(401); }
 
     var comment = new Comment(req.body.comment);
-    comment.article = req.article;
+    comment.imagepost = req.imagepost;
     comment.author = user;
 
     return comment.save().then(function(){
-      req.article.comments.push(comment);
+      req.imagepost.comments.push(comment);
 
-      return req.article.save().then(function(article) {
+      return req.imagepost.save().then(function(article) {
         res.json({comment: comment.toJSONFor(user)});
       });
     });
   }).catch(next);
 });
 
-router.delete('/:article/comments/:comment', auth.required, function(req, res, next) {
+router.delete('/:imagepost/comments/:comment', auth.required, function(req, res, next) {
   if(req.comment.author.toString() === req.payload.id.toString()){
-    req.article.comments.remove(req.comment._id);
-    req.article.save()
+    req.imagepost.comments.remove(req.comment._id);
+    req.imagepost.save()
       .then(Comment.find({_id: req.comment._id}).remove().exec())
       .then(function(){
         res.sendStatus(204);

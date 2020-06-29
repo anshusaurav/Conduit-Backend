@@ -3,12 +3,12 @@ var uniqueValidator = require('mongoose-unique-validator')
 var slug = require('slug')
 var User = mongoose.model('User')
 
-var ArticleSchema = new mongoose.Schema(
+var ImagePostSchema = new mongoose.Schema(
   {
     slug: { type: String, lowercase: true, unique: true },
-    title: String,
+    filename: String,
     description: String,
-    body: String,
+    // body: String,
     favoritesCount: { type: Number, default: 0 },
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
     tagList: [{ type: String }],
@@ -17,9 +17,9 @@ var ArticleSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-ArticleSchema.plugin(uniqueValidator, { message: 'is already taken' })
+ImagePostSchema.plugin(uniqueValidator, { message: 'is already taken' })
 
-ArticleSchema.pre('validate', function (next) {
+ImagePostSchema.pre('validate', function (next) {
   if (!this.slug) {
     this.slugify()
   }
@@ -27,29 +27,29 @@ ArticleSchema.pre('validate', function (next) {
   next()
 })
 
-ArticleSchema.methods.slugify = function () {
+ImagePostSchema.methods.slugify = function () {
   this.slug =
     slug(this.title) +
     '-' +
     ((Math.random() * Math.pow(36, 6)) | 0).toString(36)
 }
 
-ArticleSchema.methods.updateFavoriteCount = function () {
-  var article = this
+ImagePostSchema.methods.updateFavoriteCount = function () {
+  var imagepost = this
 
-  return User.count({ favorites: { $in: [article._id] } }).then(function (
+  return User.count({ favorites: { $in: [imagepost._id] } }).then(function (
     count
   ) {
-    article.favoritesCount = count
+    imagepost.favoritesCount = count
 
     return article.save()
   })
 }
 
-ArticleSchema.methods.toJSONFor = function (user) {
+ImagePostSchema.methods.toJSONFor = function (user) {
   return {
     slug: this.slug,
-    title: this.title,
+    filename: this.filename,
     description: this.description,
     body: this.body,
     createdAt: this.createdAt,
@@ -61,4 +61,4 @@ ArticleSchema.methods.toJSONFor = function (user) {
   }
 }
 
-mongoose.model('Article', ArticleSchema)
+mongoose.model('ImagePost', ImagePostSchema)
